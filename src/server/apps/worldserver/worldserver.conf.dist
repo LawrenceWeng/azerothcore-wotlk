@@ -4675,6 +4675,17 @@ Respawn.DynamicMinimumGameObject = 10
 ###################################################################################################
 
 ###################################################################################################
+# Can Release Spirit
+#
+# If enabled, players cannot release spirit and become ghosts.
+# They must be resurrected by another player, spell, or script.
+#
+#          0 (disabled)
+# Default: 1 (enabled)
+###################################################################################################
+Player.CanReleaseSpirit = 1
+
+###################################################################################################
 #                                                                                                 #
 # GAME SETTINGS END                                                                               #
 #                                                                                                 #

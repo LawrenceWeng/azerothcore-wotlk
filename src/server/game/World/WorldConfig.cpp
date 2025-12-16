@@ -669,4 +669,7 @@ void WorldConfig::BuildConfigCache()
     SetConfigValue<uint32>(CONFIG_SCOURGEINVASION_COUNTER_THIRD, "ScourgeInvasion.CounterThird", 150);
 
     SetConfigValue<std::string>(CONFIG_NEW_CHAR_STRING, "PlayerStart.String", "");
+    
+    // Player can release spirit
+    SetConfigValue<bool>(CONFIG_CAN_RELEASE_SPIRIT, "Player.CanReleaseSpirit", true);
 }

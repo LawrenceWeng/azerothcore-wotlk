@@ -66,6 +66,16 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
     if (GetPlayer()->HasPreventResurectionAura())
         return; // silently return, client should display the error by itself
 
+        
+    bool canReleaseSpirit = sWorld->getBoolConfig(CONFIG_CAN_RELEASE_SPIRIT);
+    if (!canReleaseSpirit)
+    {
+        ChatHandler(this).SendSysMessage(
+            "You cannot release your spirit. Await resurrection."
+        );
+        return;
+    }
+
     // the world update order is sessions, players, creatures
     // the netcode runs in parallel with all of these
     // creatures can kill players
