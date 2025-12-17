@@ -505,6 +505,9 @@ public: /* GroupScript */
     void OnGroupDisband(Group* group);
     bool CanGroupJoinBattlegroundQueue(Group const* group, Player* member, Battleground const* bgTemplate, uint32 MinPlayerCount, bool isRated, uint32 arenaSlot);
     void OnCreate(Group* group, Player* leader);
+    bool CanGroupAddMember(Group const* group, Player* player);
+    bool CanGroupRemoveMember(Group const* group, ObjectGuid guid, RemoveMethod method, ObjectGuid kicker, const char* reason);
+    bool CanGroupDisband(Group const* group);
 
 public: /* GlobalScript */
     void OnGlobalItemDelFromDB(CharacterDatabaseTransaction trans, ObjectGuid::LowType itemGuid);

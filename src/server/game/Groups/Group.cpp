@@ -392,6 +392,10 @@ bool Group::AddMember(Player* player)
     if (!player)
         return false;
 
+    // Check if scripts allow adding this member
+    if (!sScriptMgr->CanGroupAddMember(this, player))
+        return false;
+
     // Get first not-full group
     uint8 subGroup = 0;
     if (m_subGroupsCounts)
@@ -545,6 +549,14 @@ bool Group::AddMember(Player* player)
 
 bool Group::RemoveMember(ObjectGuid guid, const RemoveMethod& method /*= GROUP_REMOVEMETHOD_DEFAULT*/, ObjectGuid kicker /*= ObjectGuid::Empty*/, const char* reason /*= nullptr*/)
 {
+    // Check if scripts allow removing this member
+    if (!sScriptMgr->CanGroupRemoveMember(this, guid, method, kicker, reason))
+    {
+        // Send group update to refresh client's view when removal is blocked
+        SendUpdateToPlayer(guid);
+        return false;
+    }
+
     BroadcastGroupUpdate();
 
     // LFG group vote kick handled in scripts
@@ -752,6 +764,14 @@ void Group::ChangeLeader(ObjectGuid newLeaderGuid)
 
 void Group::Disband(bool hideDestroy /* = false */)
 {
+    // Check if scripts allow disbanding this group
+    if (!sScriptMgr->CanGroupDisband(this))
+    {
+        // Send group update to all members to refresh client's view when disband is blocked
+        SendUpdate();
+        return;
+    }
+
     sScriptMgr->OnGroupDisband(this);
 
     Player* player;

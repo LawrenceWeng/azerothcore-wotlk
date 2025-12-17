@@ -31,6 +31,9 @@ enum GroupHook
     GROUPHOOK_ON_DISBAND,
     GROUPHOOK_CAN_GROUP_JOIN_BATTLEGROUND_QUEUE,
     GROUPHOOK_ON_CREATE,
+    GROUPHOOK_CAN_ADD_MEMBER,
+    GROUPHOOK_CAN_REMOVE_MEMBER,
+    GROUPHOOK_CAN_DISBAND,
     GROUPHOOK_END
 };
 
@@ -62,6 +65,15 @@ public:
     [[nodiscard]] virtual bool CanGroupJoinBattlegroundQueue(Group const* /*group*/, Player* /*member*/, Battleground const* /*bgTemplate*/, uint32 /*MinPlayerCount*/, bool /*isRated*/, uint32 /*arenaSlot*/) { return true; }
 
     virtual void OnCreate(Group* /*group*/, Player* /*leader*/) { }
+
+    // Called before a member is added to a group. Return true to allow, false to block.
+    [[nodiscard]] virtual bool CanAddMember(Group const* /*group*/, Player* /*player*/) { return true; }
+
+    // Called before a member is removed from a group. Return true to allow, false to block.
+    [[nodiscard]] virtual bool CanRemoveMember(Group const* /*group*/, ObjectGuid /*guid*/, RemoveMethod /*method*/, ObjectGuid /*kicker*/, const char* /*reason*/) { return true; }
+
+    // Called before a group is disbanded. Return true to allow, false to block.
+    [[nodiscard]] virtual bool CanDisband(Group const* /*group*/) { return true; }
 };
 
 #endif

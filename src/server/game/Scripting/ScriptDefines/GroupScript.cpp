@@ -64,6 +64,28 @@ void ScriptMgr::OnCreate(Group* group, Player* leader)
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_CREATE, script->OnCreate(group, leader));
 }
 
+bool ScriptMgr::CanGroupAddMember(Group const* group, Player* player)
+{
+    ASSERT(group);
+    ASSERT(player);
+
+    CALL_ENABLED_BOOLEAN_HOOKS(GroupScript, GROUPHOOK_CAN_ADD_MEMBER, !script->CanAddMember(group, player));
+}
+
+bool ScriptMgr::CanGroupRemoveMember(Group const* group, ObjectGuid guid, RemoveMethod method, ObjectGuid kicker, const char* reason)
+{
+    ASSERT(group);
+
+    CALL_ENABLED_BOOLEAN_HOOKS(GroupScript, GROUPHOOK_CAN_REMOVE_MEMBER, !script->CanRemoveMember(group, guid, method, kicker, reason));
+}
+
+bool ScriptMgr::CanGroupDisband(Group const* group)
+{
+    ASSERT(group);
+
+    CALL_ENABLED_BOOLEAN_HOOKS(GroupScript, GROUPHOOK_CAN_DISBAND, !script->CanDisband(group));
+}
+
 GroupScript::GroupScript(const char* name, std::vector<uint16> enabledHooks)
     : ScriptObject(name, GROUPHOOK_END)
 {
