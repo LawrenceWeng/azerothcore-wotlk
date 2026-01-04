@@ -168,12 +168,24 @@ Map::EnterState MapMgr::PlayerCannotEnter(uint32 mapid, Player* player, bool log
     if (entry->IsRaid())
     {
         // can only enter in a raid group
-        if ((!group || !group->isRaidGroup()) && !sWorld->getBoolConfig(CONFIG_INSTANCE_IGNORE_RAID))
+        // Allow non-raid groups if either CONFIG_INSTANCE_IGNORE_RAID or CONFIG_INSTANCE_IGNORE_GROUP_SIZE is enabled
+        if ((!group || !group->isRaidGroup()) && !sWorld->getBoolConfig(CONFIG_INSTANCE_IGNORE_RAID) && !sWorld->getBoolConfig(CONFIG_INSTANCE_IGNORE_GROUP_SIZE))
         {
             // probably there must be special opcode, because client has this string constant in GlobalStrings.lua
             /// @todo: this is not a good place to send the message
             player->GetSession()->SendAreaTriggerMessage(LANG_INSTANCE_RAID_GROUP_ONLY, mapName);
             LOG_DEBUG("maps", "MAP: Player '{}' must be in a raid group to enter instance '{}'", player->GetName(), mapName);
+            return Map::CANNOT_ENTER_NOT_IN_RAID;
+        }
+    }
+    else
+    {
+        // Check if raid groups are trying to enter non-raid dungeons
+        // Allow if config is enabled to ignore group size restrictions
+        if (group && group->isRaidGroup() && !sWorld->getBoolConfig(CONFIG_INSTANCE_IGNORE_GROUP_SIZE))
+        {
+            player->GetSession()->SendAreaTriggerMessage(LANG_INSTANCE_RAID_GROUP_ONLY, mapName);
+            LOG_DEBUG("maps", "MAP: Player '{}' in raid group cannot enter non-raid dungeon '{}'", player->GetName(), mapName);
             return Map::CANNOT_ENTER_NOT_IN_RAID;
         }
     }

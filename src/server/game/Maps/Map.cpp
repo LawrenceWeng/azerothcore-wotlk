@@ -1935,12 +1935,16 @@ Map::EnterState InstanceMap::CannotEnter(Player* player, bool loginCheck)
         return Map::CannotEnter(player, loginCheck);
 
     // cannot enter if the instance is full (player cap), GMs don't count
-    uint32 maxPlayers = GetMaxPlayers();
-    if (GetPlayersCountExceptGMs() >= (loginCheck ? maxPlayers + 1 : maxPlayers))
+    // Allow bypassing player cap if config is enabled
+    if (!sWorld->getBoolConfig(CONFIG_INSTANCE_IGNORE_GROUP_SIZE))
     {
-        LOG_DEBUG("maps", "MAP: Instance '{}' of map '{}' cannot have more than '{}' players. Player '{}' rejected", GetInstanceId(), GetMapName(), maxPlayers, player->GetName());
-        player->SendTransferAborted(GetId(), TRANSFER_ABORT_MAX_PLAYERS);
-        return CANNOT_ENTER_MAX_PLAYERS;
+        uint32 maxPlayers = GetMaxPlayers();
+        if (GetPlayersCountExceptGMs() >= (loginCheck ? maxPlayers + 1 : maxPlayers))
+        {
+            LOG_DEBUG("maps", "MAP: Instance '{}' of map '{}' cannot have more than '{}' players. Player '{}' rejected", GetInstanceId(), GetMapName(), maxPlayers, player->GetName());
+            player->SendTransferAborted(GetId(), TRANSFER_ABORT_MAX_PLAYERS);
+            return CANNOT_ENTER_MAX_PLAYERS;
+        }
     }
 
     // cannot enter while an encounter is in progress on raids

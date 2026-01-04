@@ -261,6 +261,7 @@ void WorldConfig::BuildConfigCache()
 
     SetConfigValue<bool>(CONFIG_INSTANCE_IGNORE_LEVEL, "Instance.IgnoreLevel", false);
     SetConfigValue<bool>(CONFIG_INSTANCE_IGNORE_RAID, "Instance.IgnoreRaid", false);
+    SetConfigValue<bool>(CONFIG_INSTANCE_IGNORE_GROUP_SIZE, "Instance.IgnoreGroupSize", false);
     SetConfigValue<bool>(CONFIG_INSTANCE_GMSUMMON_PLAYER, "Instance.GMSummonPlayer", false);
     SetConfigValue<bool>(CONFIG_INSTANCE_SHARED_ID, "Instance.SharedNormalHeroicId", true);
 
