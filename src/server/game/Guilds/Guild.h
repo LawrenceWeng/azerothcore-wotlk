@@ -676,6 +676,11 @@ public:
     static void SendCommandResult(WorldSession* session, GuildCommandType type, GuildCommandError errCode, std::string_view param = {});
     static void SendSaveEmblemResult(WorldSession* session, GuildEmblemError errCode);
 
+    // Dungeon guild helper functions (for modules)
+    static bool IsDungeonGuildId(uint32 guildId);
+    static uint32 GetDungeonGuildId(uint32 dungeonOrder);
+    static uint32 GetDungeonOrderFromGuildId(uint32 guildId);
+
     Guild();
     ~Guild();
 

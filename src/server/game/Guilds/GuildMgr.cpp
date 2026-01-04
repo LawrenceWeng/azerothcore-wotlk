@@ -17,6 +17,7 @@
 
 #include "GuildMgr.h"
 #include "Common.h"
+#include "Config.h"
 
 GuildMgr::GuildMgr() : NextGuildId(1)
 { }
@@ -96,7 +97,13 @@ void GuildMgr::LoadGuilds()
     {
         uint32 oldMSTime = getMSTime();
 
-        CharacterDatabase.DirectExecute("DELETE g FROM guild g LEFT JOIN guild_member gm ON g.guildid = gm.guildid WHERE gm.guildid IS NULL");
+        // Delete empty guilds, but always exclude dungeon guilds (configurable ID range)
+        // This prevents dungeon guilds from being deleted even if RestrictDungeonGuilds is disabled
+        uint32 minId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMin", 100000);
+        uint32 maxId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMax", 101000);
+        std::string deleteQuery = "DELETE g FROM guild g LEFT JOIN guild_member gm ON g.guildid = gm.guildid WHERE gm.guildid IS NULL AND (g.guildid < " + std::to_string(minId) + " OR g.guildid > " + std::to_string(maxId) + ")";
+        LOG_INFO("server.loading", "Excluding dungeon guilds ({} to {}) from empty guild cleanup", minId, maxId);
+        CharacterDatabase.DirectExecute(deleteQuery);
 
         //          0          1       2             3              4              5              6
         QueryResult result = CharacterDatabase.Query("SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, "
@@ -395,8 +402,26 @@ void GuildMgr::LoadGuilds()
         {
             Guild* guild = itr->second;
             ++itr;
-            if (guild && !guild->Validate())
-                delete guild;
+            if (guild)
+            {
+                uint32 guildId = guild->GetId();
+                
+                // Always skip validation for dungeon guilds (ID range 100000-101000 by default)
+                // This prevents them from being deleted during validation
+                uint32 minId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMin", 100000);
+                uint32 maxId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMax", 101000);
+                if (guildId >= minId && guildId <= maxId)
+                {
+                    LOG_INFO("server.loading", "Skipping validation for dungeon guild {} ({}), allowing empty guild", guildId, guild->GetName());
+                    continue;
+                }
+                
+                if (!guild->Validate())
+                {
+                    LOG_INFO("server.loading", "Guild {} ({}) failed validation, deleting", guild->GetId(), guild->GetName());
+                    delete guild;
+                }
+            }
         }
 
         LOG_INFO("server.loading", ">> Validated data of loaded guilds in {} ms", GetMSTimeDiffToNow(oldMSTime));

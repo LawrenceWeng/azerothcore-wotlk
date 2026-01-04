@@ -3491,6 +3491,27 @@ Guild.BankTabCost5 = 50000000
 Guild.MemberLimit = 0
 
 #
+#     Guild.RestrictDungeonGuilds
+#        Description: Enable restrictions for dungeon guilds (used as nameplate labels in dungeon roguelite module).
+#                     When enabled, these guilds cannot be manually joined/left/invited, and guild events are suppressed.
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+#
+Guild.RestrictDungeonGuilds = 0
+#
+#     Guild.DungeonGuildIdMin
+#        Description: Minimum guild ID for dungeon guilds (used when RestrictDungeonGuilds is enabled).
+#        Default:     100000
+#
+Guild.DungeonGuildIdMin = 100000
+#
+#     Guild.DungeonGuildIdMax
+#        Description: Maximum guild ID for dungeon guilds (used when RestrictDungeonGuilds is enabled).
+#        Default:     101000
+#
+Guild.DungeonGuildIdMax = 101000
+
+#
 ###################################################################################################
 
 ###################################################################################################

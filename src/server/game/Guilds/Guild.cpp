@@ -40,6 +40,32 @@
 #define MAX_GUILD_BANK_TAB_TEXT_LEN 500
 #define EMBLEM_PRICE 10 * GOLD
 
+// Dungeon guild helper functions (for modules)
+bool Guild::IsDungeonGuildId(uint32 guildId)
+{
+    if (!sConfigMgr->GetOption<bool>("Guild.RestrictDungeonGuilds", false))
+        return false;
+
+    uint32 minId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMin", 100000);
+    uint32 maxId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMax", 101000);
+
+    return guildId >= minId && guildId <= maxId;
+}
+
+uint32 Guild::GetDungeonGuildId(uint32 dungeonOrder)
+{
+    uint32 minId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMin", 100000);
+    return minId + dungeonOrder;
+}
+
+uint32 Guild::GetDungeonOrderFromGuildId(uint32 guildId)
+{
+    if (!IsDungeonGuildId(guildId))
+        return 0;
+    uint32 minId = sConfigMgr->GetOption<uint32>("Guild.DungeonGuildIdMin", 100000);
+    return guildId - minId;
+}
+
 std::string _GetGuildEventString(GuildEvents event)
 {
     switch (event)
@@ -1107,6 +1133,15 @@ bool Guild::Create(Player* pLeader, std::string_view name)
 // Disbands guild and deletes all related data from database
 void Guild::Disband()
 {
+    // Prevent disbanding dungeon guilds (they are permanent nameplate labels)
+    if (IsDungeonGuildId(m_id))
+    {
+        LOG_WARN("guild", "Attempted to disband dungeon guild {} ({}), ignoring", m_id, m_name);
+        return;
+    }
+
+    LOG_INFO("guild", "Disbanding guild {} ({})", m_id, m_name);
+    
     // Call scripts before guild data removed from database
     sScriptMgr->OnGuildDisband(this);
 
@@ -1432,6 +1467,13 @@ void Guild::HandleBuyBankTab(WorldSession* session, uint8 tabId)
 
 void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
 {
+    // Block invites for dungeon guilds (configurable ID range)
+    if (IsDungeonGuildId(m_id))
+    {
+        SendCommandResult(session, GUILD_COMMAND_INVITE, ERR_GUILD_PERMISSIONS);
+        return;
+    }
+
     Player* pInvitee = ObjectAccessor::FindPlayerByName(name, false);
     if (!pInvitee)
     {
@@ -1494,6 +1536,12 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
 
 void Guild::HandleAcceptMember(WorldSession* session)
 {
+    // Block accept for dungeon guilds (configurable ID range)
+    if (IsDungeonGuildId(m_id))
+    {
+        return;
+    }
+
     Player* player = session->GetPlayer();
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD) && player->GetTeamId() != sCharacterCache->GetCharacterTeamByGuid(GetLeaderGUID()))
     {
@@ -1505,6 +1553,14 @@ void Guild::HandleAcceptMember(WorldSession* session)
 
 void Guild::HandleLeaveMember(WorldSession* session)
 {
+    // Block leave for dungeon guilds (configurable ID range)
+    // These are managed automatically by the dungeon roguelite module
+    if (IsDungeonGuildId(m_id))
+    {
+        SendCommandResult(session, GUILD_COMMAND_QUIT, ERR_GUILD_PERMISSIONS);
+        return;
+    }
+
     Player* player = session->GetPlayer();
     bool disband = false;
 
@@ -2089,19 +2145,23 @@ bool Guild::Validate()
     // Repair the structure of the guild.
     // If the guildmaster doesn't exist or isn't member of the guild
     // attempt to promote another member.
-    Member* pLeader = GetMember(m_leaderGuid);
-    if (!pLeader)
+    // Skip this check for dungeon guilds (they can have invalid leaders and no members)
+    if (!IsDungeonGuildId(m_id))
     {
-        DeleteMember(m_leaderGuid);
-        // If no more members left, disband guild
-        if (m_members.empty())
+        Member* pLeader = GetMember(m_leaderGuid);
+        if (!pLeader)
         {
-            Disband();
-            return false;
+            DeleteMember(m_leaderGuid);
+            // If no more members left, disband guild
+            if (m_members.empty())
+            {
+                Disband();
+                return false;
+            }
         }
+        else if (!pLeader->IsRank(GR_GUILDMASTER))
+            _SetLeaderGUID(*pLeader);
     }
-    else if (!pLeader->IsRank(GR_GUILDMASTER))
-        _SetLeaderGUID(*pLeader);
 
     // Check config if multiple guildmasters are allowed
     if (!sConfigMgr->GetOption<bool>("Guild.AllowMultipleGuildMaster", 0))
@@ -2802,6 +2862,11 @@ void Guild::_SendBankContentUpdate(uint8 tabId, SlotIds slots) const
 void Guild::_BroadcastEvent(GuildEvents guildEvent, ObjectGuid guid,
                             Optional<std::string_view> param1 /*= {}*/, Optional<std::string_view> param2 /*= {}*/, Optional<std::string_view> param3 /*= {}*/) const
 {
+    // Suppress guild events for dungeon guilds (configurable ID range)
+    // These are used as nameplate labels and shouldn't spam players with join/leave messages
+    if (IsDungeonGuildId(m_id))
+        return;
+
     WorldPackets::Guild::GuildEvent event;
     event.Type = guildEvent;
     if (param1)
