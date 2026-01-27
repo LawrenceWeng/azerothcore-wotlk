@@ -13929,6 +13929,15 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy, uint32 duration)
             if (IsAIEnabled)
                 creature->AI()->JustEngagedWith(enemy);
 
+            // Handle SetBossState for bosses without custom scripts
+            if (InstanceMap* instanceMap = creature->GetMap()->ToInstanceMap())
+            {
+                if (InstanceScript* instanceScript = instanceMap->GetInstanceScript())
+                {
+                    instanceScript->OnBossCombatStartWithoutScript(creature, enemy);
+                }
+            }
+
             if (creature->GetFormation())
                 creature->GetFormation()->MemberEngagingTarget(creature, enemy);
 
@@ -18208,6 +18217,15 @@ void Unit::Kill(Unit* killer, Unit* victim, bool durabilityLoss, WeaponAttackTyp
         if (CreatureAI* ai = creature->AI())
         {
             ai->JustDied(killer);
+        }
+
+        // Handle SetBossState for bosses without custom scripts
+        if (InstanceMap* instanceMap = creature->GetMap()->ToInstanceMap())
+        {
+            if (InstanceScript* instanceScript = instanceMap->GetInstanceScript())
+            {
+                instanceScript->OnBossDeathWithoutScript(creature, killer);
+            }
         }
 
         if (TempSummon* summon = creature->ToTempSummon())

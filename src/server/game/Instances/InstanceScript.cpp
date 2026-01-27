@@ -19,12 +19,14 @@
 #include "Chat.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "DBCStores.h"
 #include "GameObject.h"
 #include "Group.h"
 #include "InstanceSaveMgr.h"
 #include "LFGMgr.h"
 #include "Log.h"
 #include "Map.h"
+#include "ObjectMgr.h"
 #include "Opcodes.h"
 #include "Pet.h"
 #include "Player.h"
@@ -883,4 +885,258 @@ bool InstanceScript::IsTwoFactionInstance() const
     }
 
     return false;
+}
+
+DungeonEncounterList const* InstanceScript::GetDungeonEncounterList() const
+{
+    if (!instance->IsDungeon())
+        return nullptr;
+
+    Difficulty difficulty_fixed = (IsSharedDifficultyMap(instance->GetId()) ? Difficulty(instance->GetDifficulty() % 2) : instance->GetDifficulty());
+    
+    // Handle special cases for ICC and Ruby Sanctum
+    if ((instance->GetId() == 631 || instance->GetId() == 724) && instance->IsHeroic())
+    {
+        return sObjectMgr->GetDungeonEncounterList(instance->GetId(), !instance->Is25ManRaid() ? RAID_DIFFICULTY_10MAN_NORMAL : RAID_DIFFICULTY_25MAN_NORMAL);
+    }
+    else
+    {
+        return sObjectMgr->GetDungeonEncounterList(instance->GetId(), difficulty_fixed);
+    }
+}
+
+uint32 InstanceScript::GetBossIdByCreatureEntry(uint32 creatureEntry) const
+{
+    // First, check if the creature entry is already registered in the instance script
+    ObjectInfoMap::const_iterator itr = _creatureInfo.find(creatureEntry);
+    if (itr != _creatureInfo.end())
+    {
+        // The creature is registered, but we need to find which boss it belongs to
+        // Check minions first
+        MinionInfoMap::const_iterator minionItr = minions.find(creatureEntry);
+        if (minionItr != minions.end())
+        {
+            // Find the boss ID by iterating through bosses
+            for (uint32 i = 0; i < bosses.size(); ++i)
+            {
+                if (&bosses[i] == minionItr->second.bossInfo)
+                    return i;
+            }
+        }
+    }
+
+    // If not found in instance script data, try to find via encounter data
+    DungeonEncounterList const* encounters = GetDungeonEncounterList();
+    if (!encounters)
+        return bosses.size();
+
+    // Find the encounter that matches this creature entry
+    for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
+    {
+        DungeonEncounter const* encounter = *itr;
+        if (encounter->creditType == ENCOUNTER_CREDIT_KILL_CREATURE && encounter->creditEntry == creatureEntry)
+        {
+            // Use encounter index as boss ID if it's within valid range
+            // This works for most instances where encounter indices match boss IDs
+            uint32 encounterIndex = encounter->dbcEntry->encounterIndex;
+            if (encounterIndex < bosses.size())
+                return encounterIndex;
+            
+            // If encounter index doesn't match, try to find by iterating through encounters in order
+            // and matching to sequential boss IDs
+            uint32 bossId = 0;
+            for (DungeonEncounterList::const_iterator itr2 = encounters->begin(); itr2 != encounters->end(); ++itr2, ++bossId)
+            {
+                if ((*itr2)->creditType == ENCOUNTER_CREDIT_KILL_CREATURE && (*itr2)->creditEntry == creatureEntry)
+                {
+                    if (bossId < bosses.size())
+                        return bossId;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    return bosses.size(); // Not found
+}
+
+uint32 InstanceScript::GetCreatureEntryByBossId(uint32 bossId) const
+{
+    if (bossId >= bosses.size())
+        return 0;
+
+    DungeonEncounterList const* encounters = GetDungeonEncounterList();
+    if (!encounters)
+        return 0;
+
+    // Try to find encounter by encounter index first (most common case)
+    for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
+    {
+        DungeonEncounter const* encounter = *itr;
+        if (encounter->creditType == ENCOUNTER_CREDIT_KILL_CREATURE)
+        {
+            uint32 encounterIndex = encounter->dbcEntry->encounterIndex;
+            if (encounterIndex == bossId)
+                return encounter->creditEntry;
+        }
+    }
+
+    // If encounter index doesn't match, try sequential matching
+    uint32 currentBossId = 0;
+    for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
+    {
+        DungeonEncounter const* encounter = *itr;
+        if (encounter->creditType == ENCOUNTER_CREDIT_KILL_CREATURE)
+        {
+            if (currentBossId == bossId)
+                return encounter->creditEntry;
+            ++currentBossId;
+        }
+    }
+
+    return 0; // Not found
+}
+
+void InstanceScript::EnsureBossesInitializedFromEncounterData()
+{
+    // Only initialize if bosses haven't been set up yet
+    if (bosses.size() > 0)
+        return;
+
+    DungeonEncounterList const* encounters = GetDungeonEncounterList();
+    if (!encounters || encounters->empty())
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: No encounters found for map {}", instance->GetId());
+        return;
+    }
+
+    // Count encounters that use creature kills (bosses)
+    uint32 bossCount = 0;
+    for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
+    {
+        DungeonEncounter const* encounter = *itr;
+        if (encounter->creditType == ENCOUNTER_CREDIT_KILL_CREATURE)
+        {
+            bossCount++;
+        }
+    }
+
+    if (bossCount > 0)
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: Auto-initializing {} bosses from encounter data for map {}", bossCount, instance->GetId());
+        SetBossNumber(bossCount);
+    }
+    else
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: No creature-kill encounters found for map {}", instance->GetId());
+    }
+}
+
+void InstanceScript::OnBossDeathWithoutScript(Creature* creature, Unit* killer)
+{
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript called for creature entry {}", creature ? creature->GetEntry() : 0);
+    
+    if (!creature)
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature is null, returning");
+        return;
+    }
+
+    // Check if this boss has a custom script (BossAI)
+    // If it has BossAI, it will handle SetBossState itself
+    std::string aiName = creature->GetAIName();
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
+    
+    if (aiName == "BossAI")
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
+        return;
+    }
+
+    // Auto-initialize bosses from encounter data if not already initialized
+    EnsureBossesInitializedFromEncounterData();
+
+    // Try to find boss ID - this will work for bosses registered in instance script
+    // or found via encounter data, regardless of IsDungeonBoss() flag
+    uint32 bossId = GetBossIdByCreatureEntry(creature->GetEntry());
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
+    
+    if (bossId < bosses.size())
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Setting boss state to DONE for bossId {}", bossId);
+        SetBossState(bossId, DONE);
+        SaveToDB();
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Boss state set and saved for bossId {}", bossId);
+    }
+    else
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: bossId {} >= bosses.size() {}, not setting boss state", bossId, bosses.size());
+    }
+}
+
+void InstanceScript::OnBossCombatStartWithoutScript(Creature* creature, Unit* target)
+{
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript called for creature entry {}, target {}", creature ? creature->GetEntry() : 0, target ? (target->IsPlayer() ? target->GetGUID().GetCounter() : target->GetEntry()) : 0);
+    
+    if (!creature || !target)
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature or target is null, returning");
+        return;
+    }
+
+    // Check if this boss has a custom script (BossAI)
+    // If it has BossAI, it will handle SetBossState itself
+    std::string aiName = creature->GetAIName();
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
+    
+    if (aiName == "BossAI")
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
+        return;
+    }
+
+    // Auto-initialize bosses from encounter data if not already initialized
+    EnsureBossesInitializedFromEncounterData();
+
+    // Try to find boss ID - this will work for bosses registered in instance script
+    // or found via encounter data, regardless of IsDungeonBoss() flag
+    uint32 bossId = GetBossIdByCreatureEntry(creature->GetEntry());
+    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
+    
+    if (bossId < bosses.size())
+    {
+        EncounterState currentState = GetBossState(bossId);
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} current state = {}", bossId, GetBossStateName(currentState));
+        
+        // Check if boss is already in progress or done
+        // TO_BE_DECIDED is used during loading/initialization, treat it as NOT_STARTED
+        if (currentState == NOT_STARTED || currentState == TO_BE_DECIDED)
+        {
+            Player* player = target->ToPlayer();
+            LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Checking required bosses for bossId {}, player = {}", bossId, player ? "valid" : "null");
+            
+            // Check required bosses before starting
+            if (CheckRequiredBosses(bossId, player))
+            {
+                LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check passed, setting bossId {} to IN_PROGRESS", bossId);
+                SetBossState(bossId, IN_PROGRESS);
+            }
+            else
+            {
+                LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check failed, forcing evade for creature entry {}", creature->GetEntry());
+                // Required bosses not killed, force evade
+                if (creature->IsAIEnabled)
+                    creature->AI()->EnterEvadeMode();
+            }
+        }
+        else
+        {
+            LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} already in state {}, not starting", bossId, GetBossStateName(currentState));
+        }
+    }
+    else
+    {
+        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} >= bosses.size() {}, not handling combat start", bossId, bosses.size());
+    }
 }

@@ -286,6 +286,27 @@ public:
     [[nodiscard]] bool AllBossesDone() const;
     [[nodiscard]] bool AllBossesDone(std::initializer_list<uint32> bossIds) const;
 
+    // Get encounter data list for this instance
+    // Returns nullptr if not found or not a dungeon
+    DungeonEncounterList const* GetDungeonEncounterList() const;
+
+    // Get boss ID from creature entry for bosses without custom scripts
+    // Returns boss ID if found, or bosses.size() if not found
+    uint32 GetBossIdByCreatureEntry(uint32 creatureEntry) const;
+
+    // Get creature entry from boss ID using encounter data
+    // Returns creature entry if found, or 0 if not found
+    uint32 GetCreatureEntryByBossId(uint32 bossId) const;
+
+    // Handle boss death for bosses without custom scripts
+    void OnBossDeathWithoutScript(Creature* creature, Unit* killer);
+
+    // Handle boss combat start for bosses without custom scripts
+    void OnBossCombatStartWithoutScript(Creature* creature, Unit* target);
+
+    // Auto-initialize bosses from encounter data if not already initialized
+    void EnsureBossesInitializedFromEncounterData();
+
     TeamId GetTeamIdInInstance() const { return _teamIdInInstance; }
     void SetTeamIdInInstance(TeamId teamId) { _teamIdInInstance = teamId; }
     bool IsTwoFactionInstance() const;
