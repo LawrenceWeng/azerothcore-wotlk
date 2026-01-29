@@ -3172,7 +3172,10 @@ void ObjectMgr::LoadItemTemplates()
             {
                 case ITEM_MOD_SPELL_HEALING_DONE:
                 case ITEM_MOD_SPELL_DAMAGE_DONE:
-                    LOG_WARN("sql.sql", "Item (Entry: {}) has deprecated stat_type{} ({})", entry, j + 1, itemTemplate.ItemStat[j].ItemStatType);
+                    // Skip warning for specific items: 13113 (Feathermoon Headdress - Blizzard oversight), 34967 (test item)
+                    if (entry != 13113 && entry != 34967)
+                        LOG_WARN("sql.sql", "Item (Entry: {}) has deprecated stat_type{} ({})", entry, j + 1, itemTemplate.ItemStat[j].ItemStatType);
+
                     break;
                 default:
                     break;
@@ -9625,6 +9628,28 @@ void ObjectMgr::LoadGossipMenuItems()
 
         _gossipMenuItemsStore.insert(GossipMenuItemsContainer::value_type(gMenuItem.MenuID, gMenuItem));
     } while (result->NextRow());
+
+    // Warn if any trainer creature templates reference a GossipMenuId that has no gossip_menu_option entries
+    // This will cause the gossip menu to fallback to MenuID 0 at runtime which will display: "I wish to unlearn my talents."
+    std::set<uint32> checkedMenuIds;
+    for (auto const& [entry, tmpl] : _creatureTemplateStore)
+    {
+        uint32 menuId = tmpl.GossipMenuId;
+        if (!menuId)
+            continue;
+
+        if (!(tmpl.npcflag & UNIT_NPC_FLAG_TRAINER))
+            continue;
+
+        if (checkedMenuIds.contains(menuId))
+            continue;
+
+        checkedMenuIds.insert(menuId);
+
+        auto [first, second] = _gossipMenuItemsStore.equal_range(menuId);
+        if (first == second)
+            LOG_WARN("server.loading", "Trainer creature template references GossipMenuId {} has no `gossip_menu_option` entries. This will fallback to MenuID 0.", menuId);
+    }
 
     LOG_INFO("server.loading", ">> Loaded {} gossip_menu_option entries in {} ms", uint32(_gossipMenuItemsStore.size()), GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
