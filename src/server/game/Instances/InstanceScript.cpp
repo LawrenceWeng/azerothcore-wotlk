@@ -1029,28 +1029,28 @@ void InstanceScript::EnsureBossesInitializedFromEncounterData()
     }
     else
     {
-        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: No creature-kill encounters found for map {}", instance->GetId());
+        LOG_WARN("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: No creature-kill encounters found for map {}", instance->GetId());
     }
 }
 
 void InstanceScript::OnBossDeathWithoutScript(Creature* creature, Unit* killer)
 {
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript called for creature entry {}", creature ? creature->GetEntry() : 0);
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript called for creature entry {}", creature ? creature->GetEntry() : 0);
     
     if (!creature)
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature is null, returning");
+        LOG_WARN("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature is null, returning");
         return;
     }
 
     // Check if this boss has a custom script (BossAI)
     // If it has BossAI, it will handle SetBossState itself
     std::string aiName = creature->GetAIName();
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
     
     if (aiName == "BossAI")
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
         return;
     }
 
@@ -1060,39 +1060,39 @@ void InstanceScript::OnBossDeathWithoutScript(Creature* creature, Unit* killer)
     // Try to find boss ID - this will work for bosses registered in instance script
     // or found via encounter data, regardless of IsDungeonBoss() flag
     uint32 bossId = GetBossIdByCreatureEntry(creature->GetEntry());
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
     
     if (bossId < bosses.size())
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Setting boss state to DONE for bossId {}", bossId);
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Setting boss state to DONE for bossId {}", bossId);
         SetBossState(bossId, DONE);
         SaveToDB();
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Boss state set and saved for bossId {}", bossId);
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: Boss state set and saved for bossId {}", bossId);
     }
     else
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: bossId {} >= bosses.size() {}, not setting boss state", bossId, bosses.size());
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript: bossId {} >= bosses.size() {}, not setting boss state", bossId, bosses.size());
     }
 }
 
 void InstanceScript::OnBossCombatStartWithoutScript(Creature* creature, Unit* target)
 {
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript called for creature entry {}, target {}", creature ? creature->GetEntry() : 0, target ? (target->IsPlayer() ? target->GetGUID().GetCounter() : target->GetEntry()) : 0);
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript called for creature entry {}, target {}", creature ? creature->GetEntry() : 0, target ? (target->IsPlayer() ? target->GetGUID().GetCounter() : target->GetEntry()) : 0);
     
     if (!creature || !target)
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature or target is null, returning");
+        LOG_WARN("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature or target is null, returning");
         return;
     }
 
     // Check if this boss has a custom script (BossAI)
     // If it has BossAI, it will handle SetBossState itself
     std::string aiName = creature->GetAIName();
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has AI name '{}'", creature->GetEntry(), aiName);
     
     if (aiName == "BossAI")
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} has BossAI, skipping", creature->GetEntry());
         return;
     }
 
@@ -1102,29 +1102,29 @@ void InstanceScript::OnBossCombatStartWithoutScript(Creature* creature, Unit* ta
     // Try to find boss ID - this will work for bosses registered in instance script
     // or found via encounter data, regardless of IsDungeonBoss() flag
     uint32 bossId = GetBossIdByCreatureEntry(creature->GetEntry());
-    LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
+    LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: creature entry {} -> bossId {}, bosses.size() = {}", creature->GetEntry(), bossId, bosses.size());
     
     if (bossId < bosses.size())
     {
         EncounterState currentState = GetBossState(bossId);
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} current state = {}", bossId, GetBossStateName(currentState));
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} current state = {}", bossId, GetBossStateName(currentState));
         
         // Check if boss is already in progress or done
         // TO_BE_DECIDED is used during loading/initialization, treat it as NOT_STARTED
         if (currentState == NOT_STARTED || currentState == TO_BE_DECIDED)
         {
             Player* player = target->ToPlayer();
-            LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Checking required bosses for bossId {}, player = {}", bossId, player ? "valid" : "null");
+            LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Checking required bosses for bossId {}, player = {}", bossId, player ? "valid" : "null");
             
             // Check required bosses before starting
             if (CheckRequiredBosses(bossId, player))
             {
-                LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check passed, setting bossId {} to IN_PROGRESS", bossId);
+                LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check passed, setting bossId {} to IN_PROGRESS", bossId);
                 SetBossState(bossId, IN_PROGRESS);
             }
             else
             {
-                LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check failed, forcing evade for creature entry {}", creature->GetEntry());
+                LOG_WARN("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: Required bosses check failed, forcing evade for creature entry {}", creature->GetEntry());
                 // Required bosses not killed, force evade
                 if (creature->IsAIEnabled)
                     creature->AI()->EnterEvadeMode();
@@ -1132,11 +1132,11 @@ void InstanceScript::OnBossCombatStartWithoutScript(Creature* creature, Unit* ta
         }
         else
         {
-            LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} already in state {}, not starting", bossId, GetBossStateName(currentState));
+            LOG_WARN("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} already in state {}, not starting", bossId, GetBossStateName(currentState));
         }
     }
     else
     {
-        LOG_INFO("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} >= bosses.size() {}, not handling combat start", bossId, bosses.size());
+        LOG_DEBUG("scripts.ai", "InstanceScript::OnBossCombatStartWithoutScript: bossId {} >= bosses.size() {}, not handling combat start", bossId, bosses.size());
     }
 }
