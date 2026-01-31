@@ -794,7 +794,7 @@ Logger.spells.scripts=2,Console Errors
 #Logger.scripts.ai.followerai=4,Console Server
 #Logger.scripts.ai.petai=4,Console Server
 #Logger.scripts.ai.sai=4,Console Server
-#Logger.scripts.ai=4,Console Server
+Logger.scripts.ai=4,Console Server
 #Logger.scripts.cos=4,Console Server
 #Logger.scripts.midsummer=4,Console Server
 #Logger.scripts=4,Console Server
@@ -3516,7 +3516,7 @@ Guild.MemberLimit = 0
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 #
-Guild.RestrictDungeonGuilds = 0
+Guild.RestrictDungeonGuilds = 1
 #
 #     Guild.DungeonGuildIdMin
 #        Description: Minimum guild ID for dungeon guilds (used when RestrictDungeonGuilds is enabled).
@@ -4729,8 +4729,8 @@ Respawn.DynamicMinimumGameObject = 10
 ###################################################################################################
 # Can Release Spirit
 #
-# If enabled, players cannot release spirit and become ghosts.
-# They must be resurrected by another player, spell, or script.
+# If enabled (default), players can release spirit and become ghosts.
+# If disabled, players cannot release spirit and become ghosts. They must be resurrected by another player, spell, or script.
 #
 #          0 (disabled)
 # Default: 1 (enabled)
