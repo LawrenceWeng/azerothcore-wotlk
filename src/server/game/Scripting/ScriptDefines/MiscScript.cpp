@@ -94,6 +94,11 @@ void ScriptMgr::OnAfterLootTemplateProcess(Loot* loot, LootTemplate const* tab, 
     CALL_ENABLED_HOOKS(MiscScript, MISCHOOK_ON_AFTER_LOOT_TEMPLATE_PROCESS, script->OnAfterLootTemplateProcess(loot, tab, store, lootOwner, personal, noEmptyError, lootMode));
 }
 
+void ScriptMgr::OnAfterCreatureLootGenerated(Creature* creature, Loot* loot)
+{
+    CALL_ENABLED_HOOKS(MiscScript, MISCHOOK_ON_AFTER_CREATURE_LOOT_GENERATED, script->OnAfterCreatureLootGenerated(creature, loot));
+}
+
 void ScriptMgr::OnPlayerSetPhase(const AuraEffect* auraEff, AuraApplication const* aurApp, uint8 mode, bool apply, uint32& newPhase)
 {
     CALL_ENABLED_HOOKS(MiscScript, MISCHOOK_ON_PLAYER_SET_PHASE, script->OnPlayerSetPhase(auraEff, aurApp, mode, apply, newPhase));

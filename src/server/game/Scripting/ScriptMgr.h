@@ -671,6 +671,7 @@ public: /* MiscScript */
     void OnPlayerSetPhase(const AuraEffect* auraEff, AuraApplication const* aurApp, uint8 mode, bool apply, uint32& newPhase);
     void ValidateSpellAtCastSpellResult(Player* player, Unit* mover, Spell* spell, uint32 oldSpellId, uint32 spellId);
     void OnAfterLootTemplateProcess(Loot* loot, LootTemplate const* tab, LootStore const& store, Player* lootOwner, bool personal, bool noEmptyError, uint16 lootMode);
+    void OnAfterCreatureLootGenerated(Creature* creature, Loot* loot);
     void OnInstanceSave(InstanceSave* instanceSave);
     void GetDialogStatus(Player* player, Object* questgiver);
 

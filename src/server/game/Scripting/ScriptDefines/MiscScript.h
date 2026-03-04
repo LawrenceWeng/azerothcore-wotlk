@@ -39,6 +39,7 @@ enum MiscHook
     MISCHOOK_VALIDATE_SPELL_AT_CAST_SPELL,
     MISCHOOK_VALIDATE_SPELL_AT_CAST_SPELL_RESULT,
     MISCHOOK_ON_AFTER_LOOT_TEMPLATE_PROCESS,
+    MISCHOOK_ON_AFTER_CREATURE_LOOT_GENERATED,
     MISCHOOK_ON_PLAYER_SET_PHASE,
     MISCHOOK_ON_INSTANCE_SAVE,
     MISCHOOK_GET_DIALOG_STATUS,
@@ -82,6 +83,8 @@ public:
     virtual void ValidateSpellAtCastSpellResult(Player* /*player*/, Unit* /*mover*/, Spell* /*spell*/, uint32 /*oldSpellId*/, uint32 /*spellId*/) { }
 
     virtual void OnAfterLootTemplateProcess(Loot* /*loot*/, LootTemplate const* /*tab*/, LootStore const& /*store*/, Player* /*lootOwner*/, bool /*personal*/, bool /*noEmptyError*/, uint16 /*lootMode*/) { }
+
+    virtual void OnAfterCreatureLootGenerated(Creature* /*creature*/, Loot* /*loot*/) { }
 
     virtual void OnPlayerSetPhase(const AuraEffect* /*auraEff*/, AuraApplication const* /*aurApp*/, uint8 /*mode*/, bool /*apply*/, uint32& /*newPhase*/) { }
 

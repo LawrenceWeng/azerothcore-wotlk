@@ -2653,6 +2653,22 @@ void GameObject::SetLootRecipient(Creature* creature)
     SetAllowedLooters(creature->GetAllowedLooters());
 }
 
+void GameObject::SetLootRecipient(ObjectGuid playerGuid)
+{
+    if (!playerGuid)
+    {
+        m_lootRecipient.Clear();
+        m_lootRecipientGroup = 0;
+        ResetAllowedLooters();
+        return;
+    }
+
+    m_lootRecipient = playerGuid;
+    m_lootRecipientGroup = 0;
+    ResetAllowedLooters();
+    AddAllowedLooter(playerGuid);
+}
+
 void GameObject::SetLootRecipient(Map* map)
 {
     Group* group = nullptr;

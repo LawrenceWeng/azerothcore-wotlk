@@ -249,6 +249,7 @@ public:
     [[nodiscard]] Group* GetLootRecipientGroup() const;
     void SetLootRecipient(Creature* creature);
     void SetLootRecipient(Map* map);
+    void SetLootRecipient(ObjectGuid playerGuid);
     bool IsLootAllowedFor(Player const* player) const;
     [[nodiscard]] bool HasLootRecipient() const { return m_lootRecipient || m_lootRecipientGroup; }
     uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
