@@ -2170,7 +2170,7 @@ void Group::ResetInstances(uint8 method, bool isRaid, Player* leader)
                     }
                     else
                     {
-                        leader->SendResetInstanceFailed(0, instanceSave->GetMapId());
+                        leader->SendResetInstanceFailed(INSTANCE_RESET_FAILED, instanceSave->GetMapId());
                     }
 
                     sInstanceSaveMgr->DeleteInstanceSavedData(instanceSave->GetInstanceId());
@@ -2198,7 +2198,7 @@ void Group::ResetInstances(uint8 method, bool isRaid, Player* leader)
                     }
                     else
                     {
-                        leader->SendResetInstanceFailed(0, instanceSave->GetMapId());
+                        leader->SendResetInstanceFailed(INSTANCE_RESET_FAILED, instanceSave->GetMapId());
                     }
 
                     sInstanceSaveMgr->DeleteInstanceSavedData(instanceSave->GetInstanceId());
