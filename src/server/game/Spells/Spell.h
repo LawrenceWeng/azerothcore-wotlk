@@ -838,7 +838,9 @@ namespace Acore
         Position const* _position;
         Acore::WorldObjectSpellAreaTargetSearchReason _searchReason;
         WorldObjectSpellAreaTargetCheck(float range, Position const* position, Unit* caster,
-                                        Unit* referer, SpellInfo const* spellInfo, SpellTargetCheckTypes selectionType, ConditionList* condList, Acore::WorldObjectSpellAreaTargetSearchReason searchReason = Acore::WorldObjectSpellAreaTargetSearchReason::Area);
+                                        Unit* referer, SpellInfo const* spellInfo, SpellTargetCheckTypes selectionType, ConditionList* condList);
+        WorldObjectSpellAreaTargetCheck(float range, Position const* position, Unit* caster,
+                                        Unit* referer, SpellInfo const* spellInfo, SpellTargetCheckTypes selectionType, ConditionList* condList, Acore::WorldObjectSpellAreaTargetSearchReason searchReason);
         bool operator()(WorldObject* target);
     };
 
