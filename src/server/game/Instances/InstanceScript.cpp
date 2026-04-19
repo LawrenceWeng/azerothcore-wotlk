@@ -33,6 +33,7 @@
 #include "ScriptMgr.h"
 #include "Spell.h"
 #include "WorldSession.h"
+#include <algorithm>
 
 BossBoundaryData::~BossBoundaryData()
 {
@@ -1016,21 +1017,32 @@ void InstanceScript::EnsureBossesInitializedFromEncounterData()
         return;
     }
 
-    // Count encounters that use creature kills (bosses)
+    // Boss state slots are keyed by encounterIndex (SetBossState id), not by the
+    // number of kill-credit rows. Gaps in encounterIndex (e.g. map 48) require
+    // bosses.size() >= max(encounterIndex) + 1, not merely a count of rows.
     uint32 bossCount = 0;
+    uint32 requiredSlots = 0;
     for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
     {
         DungeonEncounter const* encounter = *itr;
         if (encounter->creditType == ENCOUNTER_CREDIT_KILL_CREATURE)
         {
-            bossCount++;
+            ++bossCount;
+            if (encounter->dbcEntry)
+            {
+                uint32 const endIndex = encounter->dbcEntry->encounterIndex + 1;
+                if (endIndex > requiredSlots)
+                    requiredSlots = endIndex;
+            }
         }
     }
 
-    if (bossCount > 0)
+    uint32 const totalSlots = std::max(bossCount, requiredSlots);
+    if (totalSlots > 0)
     {
-        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: Auto-initializing {} bosses from encounter data for map {}", bossCount, instance->GetId());
-        SetBossNumber(bossCount);
+        LOG_INFO("scripts.ai", "InstanceScript::EnsureBossesInitializedFromEncounterData: Auto-initializing {} boss state slot(s) from encounter data for map {} (kill-credit count {})",
+            totalSlots, instance->GetId(), bossCount);
+        SetBossNumber(totalSlots);
     }
     else
     {

@@ -28,6 +28,7 @@
 #include "GameEventMgr.h"
 #include "GameTime.h"
 #include "GridNotifiers.h"
+#include "InstanceScript.h"
 #include "Group.h"
 #include "GroupMgr.h"
 #include "Log.h"
@@ -2837,6 +2838,16 @@ void Creature::AtEngage(Unit* target)
 
         sScriptMgr->OnUnitEnterCombat(this, target);
     }
+
+    // SmartAI / scripted bosses without BossAI never call SetBossState(IN_PROGRESS)
+    // from their AI; InstanceScript::OnBossCombatStartWithoutScript exists for that
+    // but was never hooked. Run after JustEngagedWith so BossAI can set IN_PROGRESS
+    // first (this path skips creatures using BossAI).
+    if (!IsPet() && !IsGuardian())
+        if (Map* map = GetMap())
+            if (InstanceMap* instanceMap = map->ToInstanceMap())
+                if (InstanceScript* instanceScript = instanceMap->GetInstanceScript())
+                    instanceScript->OnBossCombatStartWithoutScript(this, target);
 }
 
 void Creature::AtDisengage()
