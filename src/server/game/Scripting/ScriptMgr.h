@@ -369,6 +369,7 @@ public: /* PlayerScript */
     void OnPlayerQuestComputeXP(Player* player, Quest const* quest, uint32& xpValue);
     void OnPlayerBeforeDurabilityRepair(Player* player, ObjectGuid npcGUID, ObjectGuid itemGUID, float& discountMod, uint8 guildBank);
     void OnPlayerBeforeBuyItemFromVendor(Player* player, ObjectGuid vendorguid, uint32 vendorslot, uint32& item, uint8 count, uint8 bag, uint8 slot);
+    void OnPlayerBeforeBuyBackItem(Player* player, Creature* vendor, uint32 buybackSlot, uint32& price);
     void OnPlayerBeforeStoreOrEquipNewItem(Player* player, uint32 vendorslot, uint32& item, uint8 count, uint8 bag, uint8 slot, ItemTemplate const* pProto, Creature* pVendor, VendorItem const* crItem, bool bStore);
     void OnPlayerAfterStoreOrEquipNewItem(Player* player, uint32 vendorslot, Item* item, uint8 count, uint8 bag, uint8 slot, ItemTemplate const* pProto, Creature* pVendor, VendorItem const* crItem, bool bStore);
     void OnPlayerAfterUpdateMaxPower(Player* player, Powers& power, float& value);

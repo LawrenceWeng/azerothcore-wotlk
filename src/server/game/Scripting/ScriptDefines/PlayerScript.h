@@ -211,6 +211,7 @@ enum PlayerHook
     PLAYERHOOK_ON_GIVE_REPUTATION,
     PLAYERHOOK_ON_GET_REPUTATION_PRICE_DISCOUNT,
     PLAYERHOOK_ON_LEARN_TAXI_NODE,
+    PLAYERHOOK_ON_BEFORE_BUYBACK_ITEM,
     PLAYERHOOK_END
 };
 
@@ -456,6 +457,9 @@ public:
 
     //After buying something from any vendor
     virtual void OnPlayerAfterStoreOrEquipNewItem(Player* /*player*/, uint32 /*vendorslot*/, Item* /*item*/, uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/, ItemTemplate const* /*pProto*/, Creature* /*pVendor*/, VendorItem const* /*crItem*/, bool /*bStore*/) { };
+
+    // Before vendor buyback: money check and ModifyMoney use price; scripts may set to 0.
+    virtual void OnPlayerBeforeBuyBackItem(Player* /*player*/, Creature* /*vendor*/, uint32 /*buybackSlot*/, uint32& /*price*/) { }
 
     virtual void OnPlayerAfterUpdateMaxPower(Player* /*player*/, Powers& /*power*/, float& /*value*/) { }
 

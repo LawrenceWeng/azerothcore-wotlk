@@ -439,6 +439,11 @@ void ScriptMgr::OnPlayerBeforeBuyItemFromVendor(Player* player, ObjectGuid vendo
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_BEFORE_BUY_ITEM_FROM_VENDOR, script->OnPlayerBeforeBuyItemFromVendor(player, vendorguid, vendorslot, item, count, bag, slot));
 }
 
+void ScriptMgr::OnPlayerBeforeBuyBackItem(Player* player, Creature* vendor, uint32 buybackSlot, uint32& price)
+{
+    CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_BEFORE_BUYBACK_ITEM, script->OnPlayerBeforeBuyBackItem(player, vendor, buybackSlot, price));
+}
+
 void ScriptMgr::OnPlayerAfterStoreOrEquipNewItem(Player* player, uint32 vendorslot, Item* item, uint8 count, uint8 bag, uint8 slot, ItemTemplate const* pProto, Creature* pVendor, VendorItem const* crItem, bool bStore)
 {
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_AFTER_STORE_OR_EQUIP_NEW_ITEM, script->OnPlayerAfterStoreOrEquipNewItem(player, vendorslot, item, count, bag, slot, pProto, pVendor, crItem, bStore));
