@@ -683,7 +683,7 @@ bool AuctionHouseUsablePlayerInfo::PlayerCanUseItem(ItemTemplate const* proto) c
     if (proto->RequiredSpell != 0 && !HasSpell(proto->RequiredSpell))
         return false;
 
-    if (level < proto->RequiredLevel)
+    if (!sWorld->getBoolConfig(CONFIG_ITEM_IGNORE_REQUIRED_LEVEL) && level < proto->RequiredLevel)
         return false;
 
     if (proto->Spells[0].SpellId)

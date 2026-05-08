@@ -2748,6 +2748,15 @@ ItemDelete.KeepDays = 0
 DBC.EnforceItemAttributes = 1
 
 #
+#    Item.IgnoreRequiredLevel
+#        Description: Ignore item required level checks when equipping/using items.
+#        Default:     0 - (Disabled, required level is enforced)
+#                     1 - (Enabled, required level is ignored for all items)
+#
+
+Item.IgnoreRequiredLevel = 1
+
+#
 #    Rate.Drop.Item.Poor
 #    Rate.Drop.Item.Normal
 #    Rate.Drop.Item.Uncommon

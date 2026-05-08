@@ -2385,7 +2385,7 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
     }
 
-    if (GetLevel() < proto->RequiredLevel)
+    if (!sWorld->getBoolConfig(CONFIG_ITEM_IGNORE_REQUIRED_LEVEL) && GetLevel() < proto->RequiredLevel)
     {
         return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
     }
