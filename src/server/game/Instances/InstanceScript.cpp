@@ -1056,7 +1056,7 @@ void InstanceScript::EnsureBossesInitializedFromEncounterData()
     }
 }
 
-void InstanceScript::OnBossDeathWithoutScript(Creature* creature, Unit* killer)
+void InstanceScript::OnBossDeathWithoutScript(Creature* creature, Unit* /*killer*/)
 {
     LOG_DEBUG("scripts.ai", "InstanceScript::OnBossDeathWithoutScript called for creature entry {}", creature ? creature->GetEntry() : 0);
     
