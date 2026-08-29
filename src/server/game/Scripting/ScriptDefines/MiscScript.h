@@ -49,7 +49,7 @@ enum MiscHook
 class MiscScript : public ScriptObject
 {
 protected:
-    MiscScript(const char* name, std::vector<uint16> enabledHooks = std::vector<uint16>());
+    MiscScript(char const* name, std::vector<uint16> enabledHooks = std::vector<uint16>());
 
 public:
     [[nodiscard]] bool IsDatabaseBound() const override { return false; }
@@ -86,7 +86,7 @@ public:
 
     virtual void OnAfterCreatureLootGenerated(Creature* /*creature*/, Loot* /*loot*/) { }
 
-    virtual void OnPlayerSetPhase(const AuraEffect* /*auraEff*/, AuraApplication const* /*aurApp*/, uint8 /*mode*/, bool /*apply*/, uint32& /*newPhase*/) { }
+    virtual void OnPlayerSetPhase(AuraEffect const* /*auraEff*/, AuraApplication const* /*aurApp*/, uint8 /*mode*/, bool /*apply*/, uint32& /*newPhase*/) { }
 
     virtual void OnInstanceSave(InstanceSave* /*instanceSave*/) { }
 

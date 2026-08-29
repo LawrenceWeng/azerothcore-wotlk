@@ -33,7 +33,7 @@ void ScriptMgr::OnGroupInviteMember(Group* group, ObjectGuid guid)
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_INVITE_MEMBER, script->OnInviteMember(group, guid));
 }
 
-void ScriptMgr::OnGroupRemoveMember(Group* group, ObjectGuid guid, RemoveMethod method, ObjectGuid kicker, const char* reason)
+void ScriptMgr::OnGroupRemoveMember(Group* group, ObjectGuid guid, RemoveMethod method, ObjectGuid kicker, char const* reason)
 {
     ASSERT(group);
 
@@ -86,7 +86,7 @@ bool ScriptMgr::CanGroupDisband(Group const* group)
     CALL_ENABLED_BOOLEAN_HOOKS(GroupScript, GROUPHOOK_CAN_DISBAND, !script->CanDisband(group));
 }
 
-GroupScript::GroupScript(const char* name, std::vector<uint16> enabledHooks)
+GroupScript::GroupScript(char const* name, std::vector<uint16> enabledHooks)
     : ScriptObject(name, GROUPHOOK_END)
 {
     // If empty - enable all available hooks.
