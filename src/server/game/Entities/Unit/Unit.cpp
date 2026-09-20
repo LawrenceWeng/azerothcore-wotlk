@@ -74,6 +74,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 
@@ -14967,10 +14968,26 @@ void Unit::RemoveCharmedBy(Unit* charmer)
         Player* targetPlayer = ToPlayer();
         targetPlayer->SetClientControl(this, true); // verified
 
-        // Re-sync only the speed types that changed during the charm.
+        // Spells like Hakkar Cause Insanity apply MOD_CHARM + a run-speed boost on one aura.
+        // RemoveCharmedBy runs on the charm effect before the speed effect is unapplied, so a
+        // synchronous force-speed here still includes the boost. If Polymorph delays the client
+        // ACK until sheep ends, the ACK reports that obsolete high speed and the player is
+        // kicked ("Incorrect speed"). Defer until the rest of the aura has finished unapplying.
+        ObjectGuid const playerGuid = targetPlayer->GetGUID();
+        std::array<float, MAX_MOVE_TYPE> snapshot{};
         for (uint8 i = MOVE_WALK; i < MAX_MOVE_TYPE; ++i)
-            if (m_speed_rate[i] != _charmStartSpeedRate[i])
-                SendSpeedToController(UnitMoveType(i), targetPlayer);
+            snapshot[i] = _charmStartSpeedRate[i];
+
+        targetPlayer->m_Events.AddEventAtOffset([playerGuid, snapshot]()
+        {
+            Player* player = ObjectAccessor::FindPlayer(playerGuid);
+            if (!player || player->IsCharmed())
+                return;
+
+            for (uint8 i = MOVE_WALK; i < MAX_MOVE_TYPE; ++i)
+                if (player->GetSpeedRate(UnitMoveType(i)) != snapshot[i])
+                    player->SendSpeedToController(UnitMoveType(i), player);
+        }, 1ms);
     }
 
     // a guardian should always have charminfo
