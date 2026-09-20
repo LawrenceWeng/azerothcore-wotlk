@@ -74,7 +74,6 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <limits>
 
@@ -14970,21 +14969,18 @@ void Unit::RemoveCharmedBy(Unit* charmer)
         // RemoveCharmedBy runs on the charm effect before the speed effect is unapplied, so a
         // synchronous force-speed here still includes the boost. If Polymorph delays the client
         // ACK until sheep ends, the ACK reports that obsolete high speed and the player is
-        // kicked ("Incorrect speed"). Defer until the rest of the aura has finished unapplying.
+        // kicked ("Incorrect speed"). Defer until the rest of the aura has finished unapplying,
+        // then always push current rates so the client cannot keep the MC speed buff.
         ObjectGuid const playerGuid = targetPlayer->GetGUID();
-        std::array<float, MAX_MOVE_TYPE> snapshot{};
-        for (uint8 i = MOVE_WALK; i < MAX_MOVE_TYPE; ++i)
-            snapshot[i] = _charmStartSpeedRate[i];
 
-        targetPlayer->m_Events.AddEventAtOffset([playerGuid, snapshot]()
+        targetPlayer->m_Events.AddEventAtOffset([playerGuid]()
         {
             Player* player = ObjectAccessor::FindPlayer(playerGuid);
             if (!player || player->IsCharmed())
                 return;
 
             for (uint8 i = MOVE_WALK; i < MAX_MOVE_TYPE; ++i)
-                if (player->GetSpeedRate(UnitMoveType(i)) != snapshot[i])
-                    player->SendSpeedToController(UnitMoveType(i), player);
+                player->SendSpeedToController(UnitMoveType(i), player);
         }, 1ms);
     }
 
