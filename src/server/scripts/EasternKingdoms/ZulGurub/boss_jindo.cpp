@@ -81,6 +81,8 @@ struct boss_jindo : public BossAI
         switch (summon->GetEntry())
         {
             case NPC_BRAIN_WASH_TOTEM:
+                // Totem must not land on Jin'do's threatened-by list or wipe/evade stalls.
+                summon->SetImmuneToNPC(true);
                 summon->SetReactState(REACT_PASSIVE);
                 if (Unit* target = SelectTarget(SelectTargetMethod::Random, me->GetThreatMgr().GetThreatListSize() > 1 ? 1 : 0))
                 {
@@ -92,20 +94,63 @@ struct boss_jindo : public BossAI
         }
     }
 
-    void EnterEvadeMode(EvadeReason evadeReason) override
+    // Soft reset: dance for 4s while still attackable (Brain Wash Totem MC / solo), then home.
+    // Do not call CreatureAI::_EnterEvadeMode here — it sets UNIT_STATE_EVADE immediately,
+    // which blocks re-aggro and can leave him permanently wedged after a partial wipe.
+    void EnterEvadeMode(EvadeReason /*why*/) override
     {
-        if (CreatureAI::_EnterEvadeMode(evadeReason))
+        if (!me->IsAlive())
         {
-            Reset();
-            me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DANCE);
-
-            _scheduler.Schedule(4s, [this](TaskContext /*context*/)
-            {
-                me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
-                me->AddUnitState(UNIT_STATE_EVADE);
-                me->GetMotionMaster()->MoveTargetedHome();
-            });
+            EngagementOver();
+            return;
         }
+
+        // Recover from a previous soft-evade that never finished home movement.
+        if (me->IsInEvadeMode())
+        {
+            _scheduler.CancelAll();
+            me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
+            if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() != HOME_MOTION_TYPE)
+                me->GetMotionMaster()->MoveTargetedHome();
+            return;
+        }
+
+        _scheduler.CancelAll();
+
+        me->RemoveEvadeAuras();
+        me->ClearComboPointHolders();
+        me->CombatStop(true);
+        me->LoadCreaturesAddon(true);
+        me->SetLootRecipient(nullptr);
+        me->ResetPlayerDamageReq();
+        me->ClearLastLeashExtensionTimePtr();
+        me->SetCannotReachTarget();
+        EngagementOver();
+
+        Reset();
+
+        me->GetMotionMaster()->Clear(false);
+        me->StopMoving();
+        me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DANCE);
+
+        _scheduler.Schedule(4s, [this](TaskContext /*context*/)
+        {
+            me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
+
+            // Re-engaged during the soft window — leave him in combat.
+            if (me->IsEngaged() || me->IsInCombat())
+                return;
+
+            me->AddUnitState(UNIT_STATE_EVADE);
+            me->GetMotionMaster()->MoveTargetedHome();
+        });
+    }
+
+    void JustReachedHome() override
+    {
+        BossAI::JustReachedHome();
+        me->ClearUnitState(UNIT_STATE_EVADE);
+        me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
     }
 
     void UpdateAI(uint32 diff) override
@@ -288,10 +333,15 @@ struct npc_brain_wash_totem : public ScriptedAI
 {
     npc_brain_wash_totem(Creature* creature) : ScriptedAI(creature)
     {
+        me->SetImmuneToNPC(true);
+        me->SetReactState(REACT_PASSIVE);
     }
 
+    // Stay rooted at cast location, but clear combat so a living MC'd player
+    // cannot keep Jin'do from finishing his soft reset after a wipe.
     void EnterEvadeMode(EvadeReason /*evadeReason*/) override
     {
+        me->CombatStop(true);
     }
 };
 

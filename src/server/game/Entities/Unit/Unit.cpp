@@ -14812,6 +14812,12 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
 
     AddUnitState(UNIT_STATE_CHARMED);
 
+    // After the faction swap, drop PvE combat with units that are now friendly
+    // (e.g. Jin'do Brain Wash Totem). Stale refs otherwise keep the boss engaged
+    // with a living MC'd player and can stall encounter evade forever.
+    if (type == CHARM_TYPE_CHARM || type == CHARM_TYPE_CONVERT)
+        GetCombatManager().RevalidateCombat();
+
     if (Creature* creature = ToCreature())
         creature->RefreshSwimmingFlag();
 
